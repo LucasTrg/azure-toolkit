@@ -11,7 +11,9 @@ import pandas as pd
 import pkce
 import requests
 
-import callback_server
+from _callback_server import code_queue
+from _callback_server import run as run_callback_server
+from _callback_server import token_queue
 
 
 class AzureAuth:
@@ -46,7 +48,7 @@ class AzureAuth:
         }
         if self.code_redirect_uri.startswith("https"):
             kwargs["ssl_context"] = "adhoc"
-        callback_thread = threading.Thread(target=callback_server.run, kwargs=kwargs)
+        callback_thread = threading.Thread(target=run_callback_server, kwargs=kwargs)
         callback_thread.setDaemon(True)
         callback_thread.start()
         self.call_back_server = callback_thread
@@ -201,8 +203,8 @@ class AzureAuth:
             self.request_bearer_token()
             return False
 
-        elif not callback_server.code_queue.empty():
-            code, state = callback_server.code_queue.get()
+        elif not code_queue.empty():
+            code, state = code_queue.get()
             # print("CODE Received" + code)
             if int(state) != int(self.state):
                 print(
@@ -226,8 +228,8 @@ class AzureAuth:
             bool: True if the clock should continue, False if the server has received a token and the clock should stop
         """
 
-        if not callback_server.token_queue.empty():
-            token = callback_server.token_queue.get()
+        if not token_queue.empty():
+            token = token_queue.get()
             # print("TOKEN Received" + token)
 
             self.SharePointConnector.set_bearer_token(token)
@@ -237,29 +239,39 @@ class AzureAuth:
             return True
 
     def is_in_group(self, group_id, uid="me"):
+        """Checks if a user belongs to a given security group
+        # Note it might be wise to support multiple group_id check for instance to facilitate giving the user multiple credetials at once.
+
+        Args:
+            group_id (str): Security group id
+            uid (str, optional): ID to check. Defaults to "me".
+
+        Returns:
+            bool: True if the user belongs to the group, False otherwise
+        """
         if uid == "me":
             url = f"https://graph.microsoft.com/v1.0/me/getMemberGroups"
         else:
-            url =  f"https://graph.microsoft.com/v1.0/users/{id}/getMemberGroups"
+            url = f"https://graph.microsoft.com/v1.0/users/{id}/getMemberGroups"
 
-        data= {
-            "securityEnabledOnly": False
-        }
+        data = {"securityEnabledOnly": False}
 
-        headers={
+        headers = {
             "Authorization": "Bearer " + self.bearer_token,
             "Content-Type": "application/json",
             "Accept": "application/json;odata.metadata=minimal",
         }
-        
-        
+
         r = requests.post(url=url, headers=headers, data=data)
         print("Group check", r.status_code)
-        r_json=json.loads(r.content.decode("utf-8").replace("'", '\\"'))
+        r_json = json.loads(r.content.decode("utf-8").replace("'", '\\"'))
         print("Group check memberships", r_json["value"])
         return group_id in r_json["value"]
 
     def connect(self):
+        """
+        Starts the interactive authentication process, and wait for an answer on the callback server.
+        """
         self.request_authorization_code()
         while not self.poll_code():
             time.sleep(1)

@@ -1,10 +1,9 @@
 import json
 
-import bs4 as bs
 import requests
-from bs4.element import Comment
 
 from .azure_auth import AzureAuth
+
 
 class GraphMail:
     def __init__(self, azureAuth: AzureAuth):
@@ -175,27 +174,3 @@ class GraphMail:
         )
         # print(r.status_code)
         # print(r.content)
-
-
-def tag_visible(element):
-    if element.parent.name in [
-        "style",
-        "script",
-        "head",
-        "title",
-        "meta",
-        "[document]",
-    ]:
-        return False
-    if isinstance(element, Comment):
-        return False
-    return True
-
-
-def get_body(mail):
-    soup = bs.BeautifulSoup(mail, "html.parser")
-    texts = soup.findAll(text=True)
-    visible_texts = filter(tag_visible, texts)
-    return " ".join(t.strip() for t in visible_texts)
-
-    return soup.find("body")
