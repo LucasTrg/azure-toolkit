@@ -1,13 +1,11 @@
-import io
 import json
 import os
 import threading
 import time
 import webbrowser
 from random import randint
-from urllib.parse import quote, unquote
+from urllib.parse import quote
 
-import pandas as pd
 import pkce
 import requests
 
@@ -85,7 +83,6 @@ class AzureAuth:
         args:
             auth_code (str): The authorization code returned by the server
         """
-        # Set the token
         # print("Sharepoint connector :", auth_code)
         self.auth_code = auth_code
         # self.browser.close()
@@ -227,7 +224,6 @@ class AzureAuth:
         Returns:
             bool: True if the clock should continue, False if the server has received a token and the clock should stop
         """
-
         if not token_queue.empty():
             token = token_queue.get()
             # print("TOKEN Received" + token)
