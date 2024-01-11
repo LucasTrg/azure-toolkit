@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "azure-toolkit"
+version = "0.1.0"
+description = "raph API and other Azure Services"
+authors = ["Lucas Trognon <ltrognon@fia.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+Flask = "^3.0.0"
+pkce = "^1.0.3"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[project.urls]
+Homepage = "https://bitbucket.org/fia-developments/azure_toolkit"
